@@ -120,6 +120,31 @@ architecture rtl of top is
     S           : in  std_ulogic := 'L'
   );
   end component;
+
+
+
+---registar
+
+component reg is
+	generic(
+		WIDTH    : positive :=MEM_ADDR_WIDTH ;
+		RST_INIT : integer := 0
+	);
+	port(
+		i_clk  : in  std_logic;
+		--in_rst : in  std_logic;
+		i_d    : in  std_logic_vector(WIDTH-1 downto 0);
+		o_q    : out std_logic_vector(WIDTH-1 downto 0)
+	);
+end component reg;
+
+
+
+
+
+
+
+
   
   
   constant update_period     : std_logic_vector(31 downto 0) := conv_std_logic_vector(1, 32);
@@ -157,7 +182,57 @@ architecture rtl of top is
   signal dir_pixel_column    : std_logic_vector(10 downto 0);
   signal dir_pixel_row       : std_logic_vector(10 downto 0);
 
+
+
+
+--	SIGNAL   counter_r : STD_LOGIC_VECTOR(MEM_ADDR_WIDTH-1 DOWNTO 0);
+	SIGNAL   address_next : STD_LOGIC_VECTOR(MEM_ADDR_WIDTH-1 DOWNTO 0);
+	signal cnt_rst_i : STD_LOGIC;
+	signal cnt_en_i : STD_LOGIC;
+	
+
+
 begin
+
+---instanciranje registra
+
+gen_reg : reg 					PORT MAP(
+                                       i_clk  => clk_i,
+													--in_rst => rst_i,
+													i_d    =>address_next,
+													o_q    => char_address
+                                      );
+
+
+
+
+
+process(cnt_en_i,char_address)
+	begin
+
+	
+	
+		if(char_we = '1') then
+			if(address_next = 4800) then
+				
+				address_next <= (others => '0');
+			else
+				address_next <= char_address + 1;
+			end if;
+		else
+			address_next <= char_address;
+		end if;
+	
+
+end process;
+
+	
+
+
+
+
+
+
 
   -- calculate message lenght from font size
   message_lenght <= conv_std_logic_vector(MEM_SIZE/64, MEM_ADDR_WIDTH)when (font_size = 3) else -- note: some resolution with font size (32, 64)  give non integer message lenght (like 480x640 on 64 pixel font size) 480/64= 7.5
@@ -168,8 +243,8 @@ begin
   graphics_lenght <= conv_std_logic_vector(MEM_SIZE*8*8, GRAPH_MEM_ADDR_WIDTH);
   
   -- removed to inputs pin
-  direct_mode <= '1';
-  display_mode     <= "10";  -- 01 - text mode, 10 - graphics mode, 11 - text & graphics
+  direct_mode <= '0';
+  display_mode     <= "01";  -- 01 - text mode, 10 - graphics mode, 11 - text & graphics
   
   font_size        <= x"1";
   show_frame       <= '1';
@@ -250,11 +325,118 @@ begin
   --dir_red
   --dir_green
   --dir_blue
+  
+  --bela
+		dir_red <="11111111" when dir_pixel_column <= 80 else
+					 "11111111" when dir_pixel_column > 80 and dir_pixel_column<=160 else
+					 "00000000" when dir_pixel_column > 160 and dir_pixel_column<=240 else
+					 "00000000" when dir_pixel_column > 240 and dir_pixel_column<=320 else
+					 "11111111" when dir_pixel_column > 320 and dir_pixel_column<=400 else
+					 "11111111" when dir_pixel_column > 400 and dir_pixel_column<=480 else
+					 "00000000" when dir_pixel_column > 480 and dir_pixel_column<=560 else
+					 "00000000" when dir_pixel_column > 560 and dir_pixel_column<=640;
+					 
+		dir_green <="11111111" when dir_pixel_column <= 80 else
+					 "00000000" when dir_pixel_column > 80 and dir_pixel_column<=160 else
+					 "11111111" when dir_pixel_column > 160 and dir_pixel_column<=240 else
+					 "00000000" when dir_pixel_column > 240 and dir_pixel_column<=320 else
+					 "11111111" when dir_pixel_column > 320 and dir_pixel_column<=400 else
+					 "00000000" when dir_pixel_column > 400 and dir_pixel_column<=480 else
+					 "11111111" when dir_pixel_column > 480 and dir_pixel_column<=560 else
+					 "00000000" when dir_pixel_column > 560 and dir_pixel_column<=640;
+					 
+		dir_blue <="11111111" when dir_pixel_column <= 80 else
+					 "00000000" when dir_pixel_column > 80 and dir_pixel_column<=160 else
+					 "00000000" when dir_pixel_column > 160 and dir_pixel_column<=240 else
+					 "11111111" when dir_pixel_column > 240 and dir_pixel_column<=320 else
+					 "00000000" when dir_pixel_column > 320 and dir_pixel_column<=400 else
+					 "11111111" when dir_pixel_column > 400 and dir_pixel_column<=480 else
+					 "11111111" when dir_pixel_column > 480 and dir_pixel_column<=560 else
+					 "00000000" when dir_pixel_column > 560 and dir_pixel_column<=640;
+					 
+		
+		
+		
+		
+		
+		
+	--	dir_green <="11111111" when dir_pixel_column <= 80; 
+	--	dir_blue <="11111111" when dir_pixel_column <= 80 ;
+					 
+	--crvena
+--		dir_red <="11111111" when dir_pixel_column > 80 and dir_pixel_column<=160;
+	--	dir_green <="00000000" when dir_pixel_column > 80 and dir_pixel_column<=160; 
+--		dir_blue <="00000000" when dir_pixel_column > 80 and dir_pixel_column<=160 ;
+	
+	
+	--zelena
+--		dir_red <="00000000" when dir_pixel_column > 160 and dir_pixel_column<=240;
+--		dir_green <="11111111" when dir_pixel_column > 160 and dir_pixel_column<=240; 
+--		dir_blue <="00000000" when dir_pixel_column > 160 and dir_pixel_column<=240 ;
+		
+	--plava
+--		dir_red <="00000000" when dir_pixel_column > 240 and dir_pixel_column<=320;
+--		dir_green <="00000000" when dir_pixel_column > 240 and dir_pixel_column<=320; 
+--		dir_blue <="11111111" when dir_pixel_column > 240 and dir_pixel_column<=320 ;
+
+	--zuta
+	--	dir_red <="11111111" when dir_pixel_column > 320 and dir_pixel_column<=400;
+--		dir_green <="11111111" when dir_pixel_column > 320 and dir_pixel_column<=400; 
+--		dir_blue <="00000000" when dir_pixel_column > 320 and dir_pixel_column<=400 ;
+
+	--ljubicasta
+--		dir_red <="11111111" when dir_pixel_column > 400 and dir_pixel_column<=480;
+--		dir_green <="00000000" when dir_pixel_column > 400 and dir_pixel_column<=480; 
+--		dir_blue <="11111111" when dir_pixel_column > 400 and dir_pixel_column<=480 ;
+
+	--tirkizna
+--		dir_red <="00000000" when dir_pixel_column > 480 and dir_pixel_column<=560;
+--		dir_green <="11111111" when dir_pixel_column > 480 and dir_pixel_column<=560; 
+--		dir_blue <="11111111" when dir_pixel_column > 480 and dir_pixel_column<=560 ;
+
+	--crna
+--		dir_red <="00000000" when dir_pixel_column > 560 and dir_pixel_column<=640;
+--		dir_green <="00000000" when dir_pixel_column > 560 and dir_pixel_column<=640; 
+--		dir_blue <="00000000" when dir_pixel_column > 560 and dir_pixel_column<=640 ;
+
+ 
+ 
+ 
  
   -- koristeci signale realizovati logiku koja pise po TXT_MEM
   --char_address
   --char_value
   --char_we
+  
+  char_we <='1';
+  
+ 
+	char_value <= x"16" when char_address = 0 else	--V
+					  x"0C" when char_address = 0 else	--L
+					  x"01" when char_address = 0 else	--A
+					  x"04" when char_address = 0 else	--D
+					  x"09" when char_address = 0 else	--I
+					  x"0D" when char_address = 0 else	--M
+					  x"09" when char_address = 0 else	--I
+					  x"12" when char_address = 0 else	--R
+					  x"20" when char_address = 0 else	--space
+					  x"13" when char_address = 0 else	--S
+					  x"10" when char_address = 0 else	--P
+					  x"01" when char_address = 0 else	--A
+					  x"13" when char_address = 0 else	--S
+					  x"0F" when char_address = 0 else	--O
+					  x"0A" when char_address = 0 else	--J
+					  x"05" when char_address = 0 else	--E
+					  x"16" when char_address = 0 else	--V
+					  x"09" when char_address = 0 else	--I
+					  x"03" when char_address = 0 else	--C
+					  x"20";
+  
+  
+  
+  
+  
+  
   
   -- koristeci signale realizovati logiku koja pise po GRAPH_MEM
   --pixel_address
